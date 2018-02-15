@@ -22,11 +22,11 @@ def tuneRF(testData):
     output: Trained model, best_parameters
     """
     # Number of trees in random forest
-    n_estimators = [int(x) for x in np.linspace(start = 100, stop = 2000, num = 100)]
+    n_estimators = [int(x) for x in np.linspace(start = 100, stop = 500, num = 10)]
     # Number of features to consider at every split
     max_features = ['auto', 'sqrt']
     # Maximum number of levels in tree
-    max_depth = [int(x) for x in np.linspace(10, 110, num = 11)]
+    max_depth = [int(x) for x in np.linspace(10, 30, num = 11)]
     max_depth.append(None)
     # Minimum number of samples required to split a node
     min_samples_split = [2, 5, 10]
@@ -43,7 +43,7 @@ def tuneRF(testData):
                    'bootstrap': bootstrap}
     X, y = Xandy(testData)
     clf = RandomForestClassifier()
-    Search = GridSearchCV(clf, param_grid=grid,n_jobs=-1, return_train_score=True, cv=3)
+    Search = GridSearchCV(clf, param_grid=grid,n_jobs=-1, return_train_score=True, cv=3, verbose=2)
     Search.fit(X, y)
     SearchResults = pd.DataFrame(Search.cv_results_)
     bestParameters = Search.best_params_

@@ -35,7 +35,7 @@ def Xandy(Data, verbose=False, testSize=0.2):
         print ("Test_y Shape :: ", y_test.shape)
     return X, y, X_train, X_test, y_train, y_test 
 
-def tune(testData, classifier, param_grid, verbose=0):
+def tune(testData, classifier, param_grid, verbose=False):
     """
     Input: testData
     Uses this testData to call randomsearchCV for tuning parameters.
@@ -104,7 +104,7 @@ def ensembleClassifier(testData, classifier, parameters=False, featureDropFlag =
     head = ["name", "score"]
     featureImportances = sorted(zip(X_train.columns, clf.feature_importances_), key=lambda x: x[1] * -1)
     if verbose==True:
-        print(pd.DataFrame(featureImportances, col = head))
+        print(pd.DataFrame(featureImportances, columns = head))
 
     #update testData after feature Drop and return it.
     if featureDropFlag==True:
@@ -116,7 +116,7 @@ def ensembleClassifier(testData, classifier, parameters=False, featureDropFlag =
 
 def readCSV(filename, index_column):
     #Data imported in dataframe and Id column set to Index
-    df = pd.read_csv("trainSold.csv", index_col = index_column)
+    df = pd.read_csv(filename, index_col = index_column)
     df.isnull().any()
     df = df.dropna()
     #df = df.fillna(method='ffill')
@@ -184,7 +184,7 @@ def svClassifier(testData, verbose=False, testSize = 0.2):
     
 
 def main():
-    df = readCSV("trainSold.csv", index_column = 'Id')
+    df = readCSV("train.csv", index_column = 'Id')
 
     #OneHot Encoding the data.
     testData = df   

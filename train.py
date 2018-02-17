@@ -3,7 +3,7 @@
 """
 Created on Fri Feb 16 12:03:52 2018
 
-@author: tinkerman
+@author: dumbPy
 """
 
 import pandas as pd
@@ -17,12 +17,23 @@ from matplotlib.pyplot import subplots, show
 from sklearn.tree import DecisionTreeClassifier as dtc
 from sklearn.svm import SVC
 from sklearn.externals import joblib
+from sklearn.neural_network import MLPClassifier
 
-def Xandy(Data):
+
+def Xandy(Data, verbose=False, testSize=0.2):
     X = Data.iloc[:, 0:-1]
     X = pd.get_dummies(X)
+    X = (X - X.mean())/(X.max()-X.min())    #X Normalized
     y = Data.iloc[:, -1]
-    return X, y
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=testSize)
+
+    # Train and Test dataset size details
+    if verbose==True:
+        print ("Train_x Shape :: ", X_train.shape)
+        print ("Train_y Shape :: ", y_train.shape)
+        print ("Test_x Shape :: ", X_test.shape)
+        print ("Test_y Shape :: ", y_test.shape)
+    return X, y, X_train, X_test, y_train, y_test 
 
 def tune(testData, classifier, param_grid, verbose=0):
     """
@@ -34,7 +45,7 @@ def tune(testData, classifier, param_grid, verbose=0):
     #print('Tuning Parameters for : '+str(classifier))
     grid = param_grid
     
-    X, y = Xandy(testData)
+    X, y, X_train, X_test, y_train, y_test = Xandy(testData,verbose = verbose, testSize=0.2)
     clf = classifier()
     numericParameters = [i for i in grid.keys() if type(grid[i][0])==int]
     bestParameters = {}
@@ -73,16 +84,7 @@ def ensembleClassifier(testData, classifier, parameters=False, featureDropFlag =
     """
     print('******************************************************')
 
-    X, y = Xandy(testData)
-        
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=testSize)
-
-    # Train and Test dataset size details
-    if verbose==True:
-        print ("Train_x Shape :: ", X_train.shape)
-        print ("Train_y Shape :: ", y_train.shape)
-        print ("Test_x Shape :: ", X_test.shape)
-        print ("Test_y Shape :: ", y_test.shape)
+    X, y, X_train, X_test, y_train, y_test = Xandy(testData,verbose = verbose, testSize=testSize)
 
     if parameters:
         clf = classifier(**parameters)
@@ -90,7 +92,6 @@ def ensembleClassifier(testData, classifier, parameters=False, featureDropFlag =
         clf = classifier()
     clf = clf.fit(X_train, y_train)
     predictions = clf.predict(X_test)
-    y_header = list(y)
     print ("Features Selected :: ", len(X.columns))
     print ("Train Accuracy    :: ", accuracy_score(y_train, clf.predict(X_train)))
     print ("Test Accuracy     :: ", accuracy_score(y_test, predictions))
@@ -121,29 +122,24 @@ def readCSV(filename, index_column):
     #df = df.fillna(method='ffill')
     return df
 
+def dumpToFile(classifier, Data, fileName):
+    feature_list = list(Xandy(Data)[0])
+    joblib.dump((classifier, feature_list), fileName)
+
 def crossValidation(model, X, y, cv=5):
     scores = cross_val_score(model, X, y, cv=cv)
-    print("Average CrossValidation Score of %0.2f runs: %0.5f\n" %(cv, scores.mean()))
+    print("Average CrossValidation Score of %0.2f runs: %0.5f\n" %(cv, scores.mean()*100))
 
 def dtClassifier(testData, parameters=False, cvFlag = True, verbose=False, testSize = 0.2):
     """
     Support Vector Classifier
-    Input:   testData, featureDropFlag(optional) to drop features
+    Input:   testData, parameters(oprional)
     Prints:  Accuracy score
     Returns: trained model clf, testData(features dropped)
     """
-    print('******************************************************')
 
-    X, y = Xandy(testData)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=testSize)
-
-    # Train and Test dataset size details
-    if verbose==True:
-        print ("Train_x Shape :: ", X_train.shape)
-        print ("Train_y Shape :: ", y_train.shape)
-        print ("Test_x Shape :: ", X_test.shape)
-        print ("Test_y Shape :: ", y_test.shape)
-
+    X, y, X_train, X_test, y_train, y_test = Xandy(testData,verbose = verbose, testSize=testSize)
+    
     if parameters:  clf = dtc(**parameters)
     else:           clf = dtc()
     
@@ -155,78 +151,97 @@ def dtClassifier(testData, parameters=False, cvFlag = True, verbose=False, testS
     if cvFlag==True:    crossValidation(clf, X, y)
     
     testData = pd.concat([X, y], axis = 1)
-    return(clf, testData)
+    return clf, testData
 
+def mlpClassifier(testData, paramaters=False, verbose=False, testSize = 0.2):
+    """
+    using Neural Network Classifier
+    Input:   testData, parameters(oprional)
+    Prints:  Accuracy score
+    Returns: trained model clf, testData(features dropped)
+    """
+    
+    X, y, X_train, X_test, y_train, y_test = Xandy(testData,verbose = verbose, testSize=testSize)
+    clf = MLPClassifier(max_iter=5000)
+    clf.fit(X_train, y_train)
+    print ("Features Selected :: ", len(X.columns))
+    print ("Train Accuracy    :: ", accuracy_score(y_train, clf.predict(X_train))*100)
+    print ("Test Accuracy     :: ", accuracy_score(y_test,  clf.predict(X_test))*100)
+    crossValidation(clf, X, y)
+    testData = pd.concat([X, y], axis = 1)
+    return clf, testData
+    
+
+def svClassifier(testData, verbose=False, testSize = 0.2):
+    params = {'C' : 10000, 'gamma' : np.exp(-16.75), 'degree': 3, 'kernel': 'rbf'}
+    clf = SVC(**params)
+    X, y, X_train, X_test, y_train, y_test = Xandy(testData,verbose = verbose, testSize=testSize)
+    clf.fit(X_train, y_train)
+    print ("Train Accuracy    :: ", accuracy_score(y_train, clf.predict(X_train))*100)
+    print ("Test Accuracy     :: ", accuracy_score(y_test,  clf.predict(X_test))*100)
+    crossValidation(clf, X, y)
+    return clf
+    
 
 def main():
     df = readCSV("trainSold.csv", index_column = 'Id')
 
     #OneHot Encoding the data.
-    testData = df
+    testData = df   
     print('******************************************************')
     print('Model = Random Forest Classifier')
-    print('******************************************************')     
+    print('******************************************************')  
+
     #Fit, Test and Drop Features
     model, testData = ensembleClassifier(testData,classifier=RandomForestClassifier, featureDropFlag=True, featureSize=10, verbose=False)
     
     print("          Training after Feature Drop")
     model, testData = ensembleClassifier(testData, classifier=RandomForestClassifier)
     
-    #Parameter Tuning
-    #print('Tuning Parameters.. ETA 1Mins... Wait....')
-    
+    #Parameter Tuning    
     param_grid_rf =    {'n_estimators': [int(x) for x in np.linspace(start = 10, stop = 2000, num = 10)],
                         'max_features': ['auto', 'sqrt'],
                         'max_depth': [int(x) for x in np.linspace(2, 1000, num = 30)],
                         'min_samples_split': [int(x) for x in np.linspace(2, 20, num = 10)],
                         'min_samples_leaf': [int(x) for x in np.linspace(1, 10, num = 10)],
-                        'bootstrap': [True, False]}
-    
+                        'bootstrap': [True, False]
+                        }
+    print('Tuning Parameters.. ETA 1Mins... Wait....')
     bestParameters_rf = tune(testData, classifier=RandomForestClassifier, param_grid = param_grid_rf)
     print("Training Model after Feature Drop and Hyperparameter Tuning")
-    final_model_rf = ensembleClassifier(testData, classifier=RandomForestClassifier, parameters=bestParameters_rf, cvFlag=True)
-    final_features_rf = list(Xandy(testData)[0])
-    testData = pd.get_dummies(df)
+    final_model_rf, testData = ensembleClassifier(testData, classifier=RandomForestClassifier, parameters=bestParameters_rf, cvFlag=True)
+    dumpToFile(final_model_rf, testData, 'model_RForest.pkl')
     
     
     print('******************************************************')
     print('Model = Gradient Boosting Classifier')
-    
     print('******************************************************\n')
     #Fit, Test and Drop Features
+    testData = df
     model, testData = ensembleClassifier(testData, classifier=GradientBoostingClassifier, featureDropFlag=True, featureSize=10, cvFlag=True,verbose=2)
     
     print("          Training after Feature Drop")
     model, testData = ensembleClassifier(testData, classifier=GradientBoostingClassifier, cvFlag=True)
     
     #Parameter Tuning for Gradient Boosting
-    param_grid_gb =    {'n_estimators': [int(x) for x in np.linspace(start = 10, stop = 2000, num = 5)],
+    param_grid_gb =    {'n_estimators': [int(x) for x in np.linspace(start = 10, stop = 2000, num = 20)],
                         'max_features': ['auto', 'sqrt'],
-                        'max_depth': [int(x) for x in np.linspace(2, 1000, num = 5)],
-                        'min_samples_split': [int(x) for x in np.linspace(2, 20, num = 5)],
+                        'max_depth': [int(x) for x in np.linspace(1, 100, num = 5)],
+                        'min_samples_split': [int(x) for x in np.linspace(2, 20, num = 10)],
                         'min_samples_leaf': [int(x) for x in np.linspace(1, 10, num = 5)],
                         }
     print('Tuning Parameters.. ETA 2Mins... Wait....')
     bestParameters_gb = tune(testData, classifier=GradientBoostingClassifier, param_grid = param_grid_gb, verbose=0)
     print("Training Model after Feature Drop and Hyperparameter Tuning")
-    final_model_gb = ensembleClassifier(testData,classifier=GradientBoostingClassifier, parameters=bestParameters_gb, cvFlag=True)
-    final_features_gb = list(Xandy(testData)[0])
+    #final_model_gb, testData = ensembleClassifier(testData,classifier=GradientBoostingClassifier, parameters=bestParameters_gb, cvFlag=True, testSize=0.33)
+    final_model_gb, testData = ensembleClassifier(testData, classifier=GradientBoostingClassifier, cvFlag=True)
+    dumpToFile(final_model_gb, testData, 'model_GBoosting.pkl')
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+    """
+    To Use TestData cleaned by above Model
+    """
+    df=testData
+    print('\n  Training on 10 best Features from Here On.\n')
     print('******************************************************')
     print('                     Model = SVC'                      )
     print('******************************************************')
@@ -236,52 +251,25 @@ def main():
     Hence: default values of SVM were used-
     except for 'gamma' : np.exp(-16.75), that was found by manual binary search
     """
+    testData=df
     final_model_svc = svClassifier(testData)
-    
+    dumpToFile(final_model_svc, testData, 'model_SVC.pkl')
     print('******************************************************')
     print('Model =Decision Tree Classifier'                       )
     print('******************************************************')    
-    model_dtc, testData = dtClassifier(testData, cvFlag=True, verbose=True)
+    testData=df
+    final_model_dtc, testData = dtClassifier(testData, cvFlag=True, verbose=False)
+    dumpToFile(final_model_dtc, testData, 'model_DTC.pkl')
     
+    print('******************************************************')
+    print('       Model = Multi Layer Perceptron')
+    print('******************************************************')    
+    testData=df
+    final_model_mlp, testData = mlpClassifier(testData)
+    dumpToFile(final_model_mlp, testData, 'model_MLP.pkl')
     
-
-# =============================================================================
-#     param_grid_svc = {'C': [100,400,800],
-#                       'kernel': ['linear','poly','rbf'],
-#                       'degree': [3,4,5],
-#                       'gamma': [0.1,0.01,0.001]}
-#     
-#     bestParameters_svc = tune(testData, classifier=SVC, param_grid = param_grid_svc, verbose=0)    
-# =============================================================================
-
-
-
-
-def svClassifier(testData, verbose=False, testSize = 0.2):
-    X, y = Xandy(testData)
-    params = {'C' : 10000, 'gamma' : np.exp(-16.75), 'degree': 3, 'kernel': 'rbf'}
-    clf = SVC(**params)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
-    clf.fit(X_train, y_train)
-    print ("Train Accuracy    :: ", accuracy_score(y_train, clf.predict(X_train))*100)
-    print ("Test Accuracy     :: ", accuracy_score(y_test,  clf.predict(X_test))*100)
-    crossValidation(clf, X, y)
-    return(clf)
 
 main()
-
-
-
-
-
-
-
-
-
-
-#best_params_rf = {'bootstrap': True, 'max_depth': 20, 'max_features': 'auto', 'min_samples_leaf': 1, 'min_samples_split': 5, 'n_estimators': 100}
-#best_params_rf = {'n_estimators': 1797, 'min_samples_split': 5, 'min_samples_leaf': 1, 'max_features': 'sqrt', 'max_depth': 50, 'bootstrap': False}
-
 
 
 #gives the list of all neighborhoods (returns array of unique elements from column 'Neighborhood')

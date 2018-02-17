@@ -1,0 +1,99 @@
+tinkerman@dumbpy:~/Documents/Intro to ML [EE769]$ python3 train.py
+******************************************************
+Model = Random Forest Classifier
+******************************************************
+******************************************************
+Features Selected ::  105
+Train Accuracy    ::  0.995437956204
+Test Accuracy     ::  0.883636363636
+Average CrossValidation Score of 5.00 runs: 92.12254
+
+******************************************************
+      Dropping Features by feature_importances_
+          Training after Feature Drop
+******************************************************
+Features Selected ::  10
+Train Accuracy    ::  0.998175182482
+Test Accuracy     ::  0.938181818182
+Average CrossValidation Score of 5.00 runs: 94.82358
+
+Tuning Parameters.. ETA 1Mins... Wait....
+******************************************************
+Best Parameters decided by Parameter Tuning: 
+
+           Parameter  Value
+0       n_estimators    231
+1       max_features   sqrt
+2          max_depth    759
+3  min_samples_split      2
+4   min_samples_leaf      2
+5          bootstrap  False
+Training Model after Feature Drop and Hyperparameter Tuning
+******************************************************
+Features Selected ::  10
+Train Accuracy    ::  0.999087591241
+Test Accuracy     ::  0.963636363636
+Average CrossValidation Score of 5.00 runs: 95.77116
+
+******************************************************
+Model = Gradient Boosting Classifier
+******************************************************
+
+******************************************************
+Features Selected ::  105
+Train Accuracy    ::  0.999087591241
+Test Accuracy     ::  0.970909090909
+Average CrossValidation Score of 5.00 runs: 97.66580
+
+******************************************************
+      Dropping Features by feature_importances_
+          Training after Feature Drop
+******************************************************
+Features Selected ::  10
+Train Accuracy    ::  0.997262773723
+Test Accuracy     ::  0.978181818182
+Average CrossValidation Score of 5.00 runs: 98.02944
+
+Tuning Parameters.. ETA 2Mins... Wait....
+******************************************************
+Best Parameters decided by Parameter Tuning: 
+
+           Parameter Value
+0       n_estimators   114
+1       max_features  auto
+2          max_depth    50
+3  min_samples_split    10
+4   min_samples_leaf     5
+Training Model after Feature Drop and Hyperparameter Tuning
+******************************************************
+Features Selected ::  10
+Train Accuracy    ::  0.997262773723
+Test Accuracy     ::  0.989090909091
+Average CrossValidation Score of 5.00 runs: 98.10270
+
+
+  Training on 10 best Features from Here On.
+
+******************************************************
+                     Model = SVC
+******************************************************
+Train Accuracy    ::  54.9270072993
+Test Accuracy     ::  49.4545454545
+Average CrossValidation Score of 5.00 runs: 53.82937
+
+******************************************************
+Model =Decision Tree Classifier
+******************************************************
+Features Selected ::  10
+Train Accuracy    ::  100.0
+Test Accuracy     ::  96.7272727273
+Average CrossValidation Score of 5.00 runs: 96.64336
+
+******************************************************
+       Model = Multi Layer Perceptron
+******************************************************
+Features Selected ::  10
+Train Accuracy    ::  97.8102189781
+Test Accuracy     ::  97.8181818182
+Average CrossValidation Score of 5.00 runs: 97.51875
+

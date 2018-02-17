@@ -2,4 +2,4 @@ __pycache__
 .spyproject
 .ipynb_checkpoints
 .~lock.trainSold.csv#
-temp
+temp_train.py

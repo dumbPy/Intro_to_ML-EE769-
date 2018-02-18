@@ -46,7 +46,6 @@ def runTest(model, X):
     return(prediction)
 
 
-#features_to_plot = ['OverallQual', 'GrLivArea']
 models = [RandomForestClassifier, GradientBoostingClassifier, MLPClassifier]
 score = []
 X = readCSV('test.csv', index_column='Id')
